@@ -14,16 +14,10 @@ Como consumidor que confere a fatura, quero ser avisado quando o arquivo CSV nã
 | CA2 | CSV sem a coluna parcela: processa normalmente e informa que a conferência de parcelas não foi feita. | `test_hu1_ca2_sem_coluna_parcela` |
 | CA3 | Linha com valor não numérico ou data inválida: o sistema a ignora, informa o número da linha e processa as demais. | `test_hu1_ca3_linha_invalida_ignorada` |
 
-### Entregas da Sprint 2
+### Relação entre testes e critérios
 
-| Entrega | Detalhe |
-|---------|---------|
-| Função | `ler_fatura` (esqueleto com `NotImplementedError`) |
-| Testes | Classe `TestHU1` com os 3 testes acima |
-| Documento | Esta seção em `docs/sprint2_historias.md` |
-| Commit | Um commit com mensagem em português |
-
-### Observações
-
-- Nesta sprint os testes falham por `NotImplementedError`, pois a funcionalidade será implementada na Sprint 3.
-- Colunas obrigatórias: `data`, `estabelecimento` e `valor`. A coluna `parcela` é opcional.
+| Teste | Critério verificado |
+|-------|---------------------|
+| `test_hu1_ca1_coluna_obrigatoria_ausente` | CA1 |
+| `test_hu1_ca2_sem_coluna_parcela` | CA2 |
+| `test_hu1_ca3_linha_invalida_ignorada` | CA3 |
