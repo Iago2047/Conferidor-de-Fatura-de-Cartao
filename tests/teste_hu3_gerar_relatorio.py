@@ -1,6 +1,6 @@
 """Testes da História 3: gerar o relatório
 
-Cada teste verifica um critério de aceitação de docs/sprint2_historias.md
+Cada teste verifica um critério de aceitação de docs/sprint2/historia3_gerar_relatorio.md
 """
 
 import re

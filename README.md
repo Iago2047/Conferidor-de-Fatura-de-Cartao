@@ -41,17 +41,29 @@ Relatório em texto com a quantidade de lançamentos lidos, o valor total da fat
 
 ## Como executar
 
-Requer Python 3. Não há dependências externas.
+Requer Python 3. Não há dependências externas. Os comandos abaixo devem ser executados na pasta raiz do projeto.
 
 ```
-git clone https://github.com/kamakawa/Conferidor-de-Fatura-de-Cartao.git
+git clone https://github.com/Iago2047/Conferidor-de-Fatura-de-Cartao.git
 cd Conferidor-de-Fatura-de-Cartao
 ```
 
-Para rodar os testes automatizados:
+Para executar o programa com a fatura de exemplo:
 
 ```
-python -m unittest teste_conferidor_fatura -v
+python conferidor_fatura.py exemplos/fatura_exemplo.csv
+```
+
+Para rodar todos os testes automatizados:
+
+```
+python -m unittest discover -s tests -v
+```
+
+Para rodar os testes de uma única história (exemplo: história 3):
+
+```
+python -m unittest tests.teste_hu3_gerar_relatorio -v
 ```
 
 ## Estrutura do repositório
@@ -59,21 +71,28 @@ python -m unittest teste_conferidor_fatura -v
 ```
 Conferidor-de-Fatura-de-Cartao/
 ├── README.md
-├── docs/
-│   ├── sprint1_proposta.md
-│   ├── sprint1_pesquisa.md
-│   └── sprint2_historias.md
 ├── conferidor_fatura.py
-└── teste_conferidor_fatura.py
+├── docs/
+│   ├── sprint1/
+│   │   └── proposta.pdf
+│   └── sprint2/
+│       ├── historia1_validar_fatura.md
+│       ├── historia2_detectar_suspeitas.md
+│       └── historia3_gerar_relatorio.md
+├── exemplos/
+│   └── fatura_exemplo.csv
+└── tests/
+    └── teste_hu3_gerar_relatorio.py
 ```
 
 ## Documentação
 
 | Documento | Conteúdo |
 |---|---|
-| `docs/sprint1_proposta.md` | Definição do trio e descrição do sistema |
-| `docs/sprint1_pesquisa.md` | Pesquisa que justifica o sistema, com referências e resumo |
-| `docs/sprint2_historias.md` | Histórias de usuário e critérios de aceitação |
+| `docs/sprint1/proposta.pdf` | Definição do trio, descrição do sistema e pesquisa com referências e resumo |
+| `docs/sprint2/historia1_validar_fatura.md` | História 1 (validar a fatura) e critérios de aceitação |
+| `docs/sprint2/historia2_detectar_suspeitas.md` | História 2 (detectar suspeitas) e critérios de aceitação |
+| `docs/sprint2/historia3_gerar_relatorio.md` | História 3 (gerar o relatório) e critérios de aceitação |
 
 ## Andamento
 
