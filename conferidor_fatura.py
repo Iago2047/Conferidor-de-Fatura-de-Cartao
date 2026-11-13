@@ -215,5 +215,86 @@ def _motivo_parcela_invalida(parcela: str) -> Optional[str]:
         return f"Parcela {atual} maior que o total de {total} parcelas"
     return None
 
+# ---------------------------------------------------------------------------
+# Camada de Domínio: relatório (História 3)
+# ---------------------------------------------------------------------------
 
+def _formatar_dinheiro(valor: Decimal) -> str:
+    """449.9 -> 'R$ 449,90' (ponto nos milhares e vírgula nos centavos)."""
+    texto = f"{valor:,.2f}"
+    texto = texto.replace(",", "_").replace(".", ",").replace("_", ".")
+    return f"R$ {texto}"
+
+
+def gerar_relatorio(
+    lancamentos: List[Lancamento], suspeitas: List[Suspeita], avisos: List[str]
+) -> str:
+    """Monta o relatório em texto com o resumo, os avisos e as suspeitas."""
+    total = sum((l.valor for l in lancamentos), Decimal("0"))
+    linhas = [
+        "RELATÓRIO DE CONFERÊNCIA DA FATURA",
+        "==================================",
+        f"Lançamentos lidos: {len(lancamentos)}",
+        f"Valor total da fatura: {_formatar_dinheiro(total)}",
+    ]
+
+    if avisos:
+        linhas += ["", "Avisos"]
+        linhas += [f"- {aviso}" for aviso in avisos]
+
+    linhas.append("")
+    if not suspeitas:
+        linhas.append("Nenhuma suspeita encontrada.")
+    else:
+        linhas += [f"Suspeitas encontradas ({len(suspeitas)})", "-" * 26]
+        for numero, suspeita in enumerate(suspeitas, start=1):
+            linhas += [
+                f"{numero}. {suspeita.tipo}",
+                f"   Motivo: {suspeita.motivo}",
+                f"   Estabelecimento: {suspeita.estabelecimento}",
+                f"   Data: {suspeita.data.strftime('%d/%m/%Y')}",
+                f"   Valor possivelmente indevido: {_formatar_dinheiro(suspeita.valor_indevido)}",
+            ]
+        indevido = sum((s.valor_indevido for s in suspeitas), Decimal("0"))
+        linhas += ["", f"Total possivelmente indevido: {_formatar_dinheiro(indevido)}"]
+
+    return "\n".join(linhas)
+
+
+# ---------------------------------------------------------------------------
+# Camada de Aplicação: orquestrador
+# ---------------------------------------------------------------------------
+
+def conferir_fatura(caminho: str) -> str:
+    """Executa as etapas na ordem e devolve o relatório em texto."""
+    lancamentos, avisos = ler_fatura(caminho)
+
+    if not lancamentos:
+        linhas = ["Não foi possível conferir a fatura: nenhum lançamento válido foi lido."]
+        linhas += [f"- {aviso}" for aviso in avisos]
+        return "\n".join(linhas)
+
+    suspeitas = detectar_duplicidade(lancamentos) + detectar_parcela_inconsistente(lancamentos)
+    return gerar_relatorio(lancamentos, suspeitas, avisos)
+
+
+# ---------------------------------------------------------------------------
+# Camada de Apresentação: terminal
+# ---------------------------------------------------------------------------
+
+def main(argumentos: Optional[List[str]] = None) -> int:
+    argumentos = sys.argv[1:] if argumentos is None else argumentos
+    if len(argumentos) != 1:
+        print("Uso: python conferidor_fatura.py fatura.csv", file=sys.stderr)
+        return 2
+    try:
+        print(conferir_fatura(argumentos[0]))
+    except (OSError, UnicodeDecodeError) as erro:
+        print(f"Erro ao ler o arquivo: {erro}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
 
