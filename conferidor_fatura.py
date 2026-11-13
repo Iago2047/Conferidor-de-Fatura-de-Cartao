@@ -139,4 +139,81 @@ def _converter_linha(registro: dict, numero_linha: int, tem_parcela: bool) -> La
         linha=numero_linha,
     )
 
+# ---------------------------------------------------------------------------
+# Camada de Domínio: detecção de suspeitas (História 2)
+# ---------------------------------------------------------------------------
+
+def _normalizar(texto: str) -> str:
+    """Ignora maiúsculas, minúsculas e espaços extras ao comparar estabelecimentos."""
+    return " ".join(texto.split()).lower()
+
+
+def detectar_duplicidade(lancamentos: List[Lancamento]) -> List[Suspeita]:
+    """Aponta lançamentos com mesma data, mesmo estabelecimento e mesmo valor.
+
+    O valor possivelmente indevido é o valor vezes as repetições além da primeira.
+    """
+    grupos = OrderedDict()
+    for lancamento in lancamentos:
+        chave = (lancamento.data, _normalizar(lancamento.estabelecimento), lancamento.valor)
+        grupos.setdefault(chave, []).append(lancamento)
+
+    suspeitas = []
+    for grupo in grupos.values():
+        repeticoes = len(grupo)
+        if repeticoes < 2:
+            continue
+        primeiro = grupo[0]
+        suspeitas.append(
+            Suspeita(
+                tipo=TIPO_DUPLICIDADE,
+                motivo=f"Lançamento repetido {repeticoes} vezes na mesma data",
+                estabelecimento=primeiro.estabelecimento.strip(),
+                data=primeiro.data,
+                valor_indevido=primeiro.valor * (repeticoes - 1),
+            )
+        )
+    return suspeitas
+
+
+def detectar_parcela_inconsistente(lancamentos: List[Lancamento]) -> List[Suspeita]:
+    """Aponta parcelas fora do formato N/M, com N menor que 1 ou maior que M.
+
+    Lançamentos sem parcela (compra à vista) não são suspeitos.
+    """
+    suspeitas = []
+    for lancamento in lancamentos:
+        parcela = (lancamento.parcela or "").strip()
+        if not parcela:
+            continue
+
+        motivo = _motivo_parcela_invalida(parcela)
+        if motivo:
+            suspeitas.append(
+                Suspeita(
+                    tipo=TIPO_PARCELA,
+                    motivo=motivo,
+                    estabelecimento=lancamento.estabelecimento.strip(),
+                    data=lancamento.data,
+                    valor_indevido=lancamento.valor,
+                )
+            )
+    return suspeitas
+
+
+def _motivo_parcela_invalida(parcela: str) -> Optional[str]:
+    """Devolve o motivo se a parcela for inválida, ou None se estiver correta."""
+    partes = re.fullmatch(r"([0-9]+)/([0-9]+)", parcela)
+    if not partes:
+        return f"Formato de parcela inválido '{parcela}' (esperado N/M)"
+    atual, total = int(partes.group(1)), int(partes.group(2))
+    if total < 1:
+        return f"Total de parcelas inválido em '{parcela}'"
+    if atual < 1:
+        return f"Número da parcela menor que 1 em '{parcela}'"
+    if atual > total:
+        return f"Parcela {atual} maior que o total de {total} parcelas"
+    return None
+
+
 
