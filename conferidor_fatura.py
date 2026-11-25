@@ -7,8 +7,9 @@ Arquitetura em camadas (ver docs/sprint3/diagrama_da_arquitetura.md):
 - Apresentação: main()
 - Aplicação:    conferir_fatura()
 - Dados:        ler_fatura()
-- Domínio:      detectar_duplicidade(), detectar_parcela_inconsistente(),
-                gerar_relatorio() e as entidades Lancamento e Suspeita
+- Domínio:      DetectorDeSuspeitas com as estratégias EstrategiaDuplicidade e
+                EstrategiaParcelaInconsistente (Strategy), gerar_relatorio() e as
+                entidades Lancamento e Suspeita
 
 Uso:
     python conferidor_fatura.py fatura.csv
@@ -21,6 +22,7 @@ Datas em DD/MM/AAAA e valores com ponto decimal (49.90).
 import csv
 import re
 import sys
+from abc import ABC, abstractmethod
 from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -148,57 +150,90 @@ def _normalizar(texto: str) -> str:
     return " ".join(texto.split()).lower()
 
 
-def detectar_duplicidade(lancamentos: List[Lancamento]) -> List[Suspeita]:
+class EstrategiaDeteccao(ABC):
+    """Interface comum das regras de detecção (padrão Strategy)."""
+
+    @abstractmethod
+    def detectar(self, lancamentos: List[Lancamento]) -> List[Suspeita]:
+        """Recebe os lançamentos e devolve as suspeitas encontradas por esta regra."""
+
+
+class EstrategiaDuplicidade(EstrategiaDeteccao):
     """Aponta lançamentos com mesma data, mesmo estabelecimento e mesmo valor.
 
     O valor possivelmente indevido é o valor vezes as repetições além da primeira.
     """
-    grupos = OrderedDict()
-    for lancamento in lancamentos:
-        chave = (lancamento.data, _normalizar(lancamento.estabelecimento), lancamento.valor)
-        grupos.setdefault(chave, []).append(lancamento)
 
-    suspeitas = []
-    for grupo in grupos.values():
-        repeticoes = len(grupo)
-        if repeticoes < 2:
-            continue
-        primeiro = grupo[0]
-        suspeitas.append(
-            Suspeita(
-                tipo=TIPO_DUPLICIDADE,
-                motivo=f"Lançamento repetido {repeticoes} vezes na mesma data",
-                estabelecimento=primeiro.estabelecimento.strip(),
-                data=primeiro.data,
-                valor_indevido=primeiro.valor * (repeticoes - 1),
+    def detectar(self, lancamentos: List[Lancamento]) -> List[Suspeita]:
+        grupos = OrderedDict()
+        for lancamento in lancamentos:
+            chave = (lancamento.data, _normalizar(lancamento.estabelecimento), lancamento.valor)
+            grupos.setdefault(chave, []).append(lancamento)
+
+        suspeitas = []
+        for grupo in grupos.values():
+            repeticoes = len(grupo)
+            if repeticoes < 2:
+                continue
+            primeiro = grupo[0]
+            suspeitas.append(
+                Suspeita(
+                    tipo=TIPO_DUPLICIDADE,
+                    motivo=f"Lançamento repetido {repeticoes} vezes na mesma data",
+                    estabelecimento=primeiro.estabelecimento.strip(),
+                    data=primeiro.data,
+                    valor_indevido=primeiro.valor * (repeticoes - 1),
+                )
             )
-        )
-    return suspeitas
+        return suspeitas
 
 
-def detectar_parcela_inconsistente(lancamentos: List[Lancamento]) -> List[Suspeita]:
+class EstrategiaParcelaInconsistente(EstrategiaDeteccao):
     """Aponta parcelas fora do formato N/M, com N menor que 1 ou maior que M.
 
     Lançamentos sem parcela (compra à vista) não são suspeitos.
     """
-    suspeitas = []
-    for lancamento in lancamentos:
-        parcela = (lancamento.parcela or "").strip()
-        if not parcela:
-            continue
 
-        motivo = _motivo_parcela_invalida(parcela)
-        if motivo:
-            suspeitas.append(
-                Suspeita(
-                    tipo=TIPO_PARCELA,
-                    motivo=motivo,
-                    estabelecimento=lancamento.estabelecimento.strip(),
-                    data=lancamento.data,
-                    valor_indevido=lancamento.valor,
+    def detectar(self, lancamentos: List[Lancamento]) -> List[Suspeita]:
+        suspeitas = []
+        for lancamento in lancamentos:
+            parcela = (lancamento.parcela or "").strip()
+            if not parcela:
+                continue
+
+            motivo = _motivo_parcela_invalida(parcela)
+            if motivo:
+                suspeitas.append(
+                    Suspeita(
+                        tipo=TIPO_PARCELA,
+                        motivo=motivo,
+                        estabelecimento=lancamento.estabelecimento.strip(),
+                        data=lancamento.data,
+                        valor_indevido=lancamento.valor,
+                    )
                 )
-            )
-    return suspeitas
+        return suspeitas
+
+
+class DetectorDeSuspeitas:
+    """Contexto do Strategy: aplica cada regra recebida e junta os resultados."""
+
+    def __init__(self, estrategias: List[EstrategiaDeteccao]):
+        self._estrategias = list(estrategias)
+
+    def detectar(self, lancamentos: List[Lancamento]) -> List[Suspeita]:
+        suspeitas = []
+        for estrategia in self._estrategias:
+            suspeitas += estrategia.detectar(lancamentos)
+        return suspeitas
+
+
+def detectar_duplicidade(lancamentos: List[Lancamento]) -> List[Suspeita]:
+    return EstrategiaDuplicidade().detectar(lancamentos)
+
+
+def detectar_parcela_inconsistente(lancamentos: List[Lancamento]) -> List[Suspeita]:
+    return EstrategiaParcelaInconsistente().detectar(lancamentos)
 
 
 def _motivo_parcela_invalida(parcela: str) -> Optional[str]:
@@ -274,7 +309,8 @@ def conferir_fatura(caminho: str) -> str:
         linhas += [f"- {aviso}" for aviso in avisos]
         return "\n".join(linhas)
 
-    suspeitas = detectar_duplicidade(lancamentos) + detectar_parcela_inconsistente(lancamentos)
+    detector = DetectorDeSuspeitas([EstrategiaDuplicidade(), EstrategiaParcelaInconsistente()])
+    suspeitas = detector.detectar(lancamentos)
     return gerar_relatorio(lancamentos, suspeitas, avisos)
 
 
