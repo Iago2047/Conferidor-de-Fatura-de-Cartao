@@ -6,7 +6,7 @@ indevida (duplicidades e parcelas inconsistentes) e gera um relatório em texto.
 Arquitetura em camadas (ver docs/sprint3/diagrama_da_arquitetura.md):
 - Apresentação: main()
 - Aplicação:    conferir_fatura()
-- Dados:        ler_fatura()
+- Dados:        ler_fatura() e a cadeia de validadores de linha (Chain of Responsibility)
 - Domínio:      DetectorDeSuspeitas com as estratégias EstrategiaDuplicidade e
                 EstrategiaParcelaInconsistente (Strategy), gerar_relatorio() e as
                 entidades Lancamento e Suspeita
@@ -108,38 +108,81 @@ def ler_fatura(caminho: str) -> Tuple[List[Lancamento], List[str]]:
     return lancamentos, avisos
 
 
+class ValidadorDeCampo(ABC):
+    """Elo da cadeia que valida uma linha do CSV (Chain of Responsibility)"""
+
+    def __init__(self) -> None:
+        self._proximo: Optional["ValidadorDeCampo"] = None
+
+    def encadear(self, proximo: "ValidadorDeCampo") -> "ValidadorDeCampo":
+        self._proximo = proximo
+        return proximo
+
+    def validar(self, registro: dict, campos: dict) -> None:
+        self.verificar(registro, campos)
+        if self._proximo is not None:
+            self._proximo.validar(registro, campos)
+
+    @abstractmethod
+    def verificar(self, registro: dict, campos: dict) -> None:
+        """Confere o seu campo e guarda o valor convertido em campos, ou levanta ValueError"""
+
+
+class ValidadorDeData(ValidadorDeCampo):
+    def verificar(self, registro: dict, campos: dict) -> None:
+        texto_data = (registro.get("data") or "").strip()
+        try:
+            campos["data"] = datetime.strptime(texto_data, "%d/%m/%Y").date()
+        except ValueError:
+            raise ValueError(f"data inválida '{texto_data}' (esperado DD/MM/AAAA)") from None
+
+
+class ValidadorDeEstabelecimento(ValidadorDeCampo):
+    def verificar(self, registro: dict, campos: dict) -> None:
+        estabelecimento = (registro.get("estabelecimento") or "").strip()
+        if not estabelecimento:
+            raise ValueError("estabelecimento vazio")
+        campos["estabelecimento"] = estabelecimento
+
+
+class ValidadorDeValor(ValidadorDeCampo):
+    def verificar(self, registro: dict, campos: dict) -> None:
+        texto_valor = (registro.get("valor") or "").strip()
+        try:
+            valor = Decimal(texto_valor)
+        except InvalidOperation:
+            raise ValueError(f"valor não numérico '{texto_valor}'") from None
+        if not valor.is_finite():
+            raise ValueError(f"valor não numérico '{texto_valor}'")
+        campos["valor"] = valor
+
+
+def _montar_cadeia_de_validacao() -> ValidadorDeCampo:
+    primeiro = ValidadorDeData()
+    primeiro.encadear(ValidadorDeEstabelecimento()).encadear(ValidadorDeValor())
+    return primeiro
+
+
+_CADEIA_DE_VALIDACAO = _montar_cadeia_de_validacao()
+
+
 def _converter_linha(registro: dict, numero_linha: int, tem_parcela: bool) -> Lancamento:
     """Converte uma linha do CSV em Lancamento. Levanta ValueError se for inválida."""
-    texto_data = (registro.get("data") or "").strip()
-    estabelecimento = (registro.get("estabelecimento") or "").strip()
-    texto_valor = (registro.get("valor") or "").strip()
-
-    try:
-        data = datetime.strptime(texto_data, "%d/%m/%Y").date()
-    except ValueError:
-        raise ValueError(f"data inválida '{texto_data}' (esperado DD/MM/AAAA)") from None
-
-    if not estabelecimento:
-        raise ValueError("estabelecimento vazio")
-
-    try:
-        valor = Decimal(texto_valor)
-    except InvalidOperation:
-        raise ValueError(f"valor não numérico '{texto_valor}'") from None
-    if not valor.is_finite():
-        raise ValueError(f"valor não numérico '{texto_valor}'")
+    campos: dict = {}
+    _CADEIA_DE_VALIDACAO.validar(registro, campos)
 
     parcela = None
     if tem_parcela:
         parcela = (registro.get("parcela") or "").strip() or None
 
     return Lancamento(
-        data=data,
-        estabelecimento=estabelecimento,
-        valor=valor,
+        data=campos["data"],
+        estabelecimento=campos["estabelecimento"],
+        valor=campos["valor"],
         parcela=parcela,
         linha=numero_linha,
     )
+
 
 # ---------------------------------------------------------------------------
 # Camada de Domínio: detecção de suspeitas-História 2
@@ -151,11 +194,11 @@ def _normalizar(texto: str) -> str:
 
 
 class EstrategiaDeteccao(ABC):
-    """Interface comum das regras de detecção (padrão Strategy)."""
+    """Toda regra de detecção segue esta interface (Strategy)"""
 
     @abstractmethod
     def detectar(self, lancamentos: List[Lancamento]) -> List[Suspeita]:
-        """Recebe os lançamentos e devolve as suspeitas encontradas por esta regra."""
+        """Suspeitas que esta regra encontra na lista de lançamentos"""
 
 
 class EstrategiaDuplicidade(EstrategiaDeteccao):
@@ -216,7 +259,7 @@ class EstrategiaParcelaInconsistente(EstrategiaDeteccao):
 
 
 class DetectorDeSuspeitas:
-    """Contexto do Strategy: aplica cada regra recebida e junta os resultados."""
+    """Roda as regras na ordem recebida e junta o que cada uma achou"""
 
     def __init__(self, estrategias: List[EstrategiaDeteccao]):
         self._estrategias = list(estrategias)
