@@ -1,6 +1,6 @@
 """Testes da História 1 (Iago): validar a fatura.
 
-Cada teste verifica um critério de aceitação de docs/sprint2_historias.md.
+Cada teste verifica um critério de aceitação de docs/sprint2/historia1_validar_fatura.md.
 O nome do teste indica a história (hu) e o critério (ca).
 
 Convenções do trio:
@@ -8,7 +8,7 @@ Convenções do trio:
 - Lancamento tem o atributo linha (número da linha no arquivo; o cabeçalho é a linha 1).
 - O CSV é lido em UTF-8, com vírgula como separador e datas DD/MM/AAAA.
 
-Para executar: python -m unittest teste_hu1_validar_fatura -v
+Para executar: python -m unittest tests.teste_hu1_validar_fatura -v (na raiz do projeto)
 """
 
 import os

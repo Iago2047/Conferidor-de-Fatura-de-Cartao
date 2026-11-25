@@ -18,7 +18,7 @@
 |---------|---------|
 | Funções | `detectar_duplicidade` e `detectar_parcela_inconsistente` (esqueletos com `NotImplementedError`) |
 | Testes | Classe `TestHU2` com os 3 testes acima |
-| Documento | Esta seção em `docs/sprint2_historias.md` |
+| Documento | Este arquivo (`docs/sprint2/historia2_detectar_suspeitas.md`) |
 | Commit | Um commit, com mensagem em português |
 
 ### Decisões de projeto

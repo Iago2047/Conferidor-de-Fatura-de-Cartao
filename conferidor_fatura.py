@@ -3,7 +3,7 @@
 Lê um CSV com os lançamentos de uma fatura, aponta suspeitas de cobrança
 indevida (duplicidades e parcelas inconsistentes) e gera um relatório em texto.
 
-Arquitetura em camadas (ver docs/arquitetura.md):
+Arquitetura em camadas (ver docs/sprint3/diagrama_da_arquitetura.md):
 - Apresentação: main()
 - Aplicação:    conferir_fatura()
 - Dados:        ler_fatura()
@@ -44,7 +44,7 @@ class Lancamento:
     estabelecimento: str
     valor: Decimal
     parcela: Optional[str] = None
-    linha: int = 0  # número da linha no arquivo (o cabeçalho é a linha 1)
+    linha: int = 0  # número da linha no arquivo 
 
 
 @dataclass(frozen=True)
@@ -59,7 +59,7 @@ class Suspeita:
 
 
 # ---------------------------------------------------------------------------
-# Camada de Dados: leitura e validação do CSV (História 1)
+# Camada de Dados: leitura e validação do CSV - História 1
 # ---------------------------------------------------------------------------
 
 def ler_fatura(caminho: str) -> Tuple[List[Lancamento], List[str]]:
@@ -140,7 +140,7 @@ def _converter_linha(registro: dict, numero_linha: int, tem_parcela: bool) -> La
     )
 
 # ---------------------------------------------------------------------------
-# Camada de Domínio: detecção de suspeitas (História 2)
+# Camada de Domínio: detecção de suspeitas-História 2
 # ---------------------------------------------------------------------------
 
 def _normalizar(texto: str) -> str:
@@ -216,7 +216,7 @@ def _motivo_parcela_invalida(parcela: str) -> Optional[str]:
     return None
 
 # ---------------------------------------------------------------------------
-# Camada de Domínio: relatório (História 3)
+# Camada de Domínio: relatório -História 3
 # ---------------------------------------------------------------------------
 
 def _formatar_dinheiro(valor: Decimal) -> str:

@@ -1,6 +1,6 @@
 """Testes da História 2 (Ives): detectar suspeitas.
 
-Cada teste verifica um critério de aceitação de docs/sprint2_historias.md.
+Cada teste verifica um critério de aceitação de docs/sprint2/historia2_detectar_suspeitas.md.
 O nome do teste indica a história (hu) e o critério (ca).
 
 Convenções do trio:
@@ -10,7 +10,7 @@ Convenções do trio:
 - Tipos de suspeita: "Duplicidade" e "Parcela inconsistente".
 - As funções de detecção recebem uma lista de Lancamento e devolvem uma lista de Suspeita.
 
-Para executar: python -m unittest teste_hu2_detectar_suspeitas -v
+Para executar: python -m unittest tests.teste_hu2_detectar_suspeitas -v (na raiz do projeto)
 """
 
 import unittest

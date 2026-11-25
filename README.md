@@ -75,13 +75,22 @@ Conferidor-de-Fatura-de-Cartao/
 ├── docs/
 │   ├── sprint1/
 │   │   └── proposta.pdf
-│   └── sprint2/
-│       ├── historia1_validar_fatura.md
-│       ├── historia2_detectar_suspeitas.md
-│       └── historia3_gerar_relatorio.md
+│   ├── sprint2/
+│   │   ├── historia1_validar_fatura.md
+│   │   ├── historia2_detectar_suspeitas.md
+│   │   └── historia3_gerar_relatorio.md
+│   └── sprint3/
+│       └── diagrama_da_arquitetura.md
 ├── exemplos/
-│   └── fatura_exemplo.csv
+│   ├── fatura_exemplo.csv
+│   ├── fatura_assinatura_mensal.csv
+│   ├── fatura_linha_invalida.csv
+│   ├── fatura_sem_coluna_parcela.csv
+│   ├── fatura_sem_coluna_valor.csv
+│   └── fatura_sem_suspeitas.csv
 └── tests/
+    ├── teste_hu1_validar_fatura.py
+    ├── teste_hu2_detectar_suspeitas.py
     └── teste_hu3_gerar_relatorio.py
 ```
 
@@ -89,6 +98,7 @@ Conferidor-de-Fatura-de-Cartao/
 
 | Documento | Conteúdo |
 |---|---|
+| `docs/sprint3/diagrama_da_arquitetura.md` | Arquitetura em camadas, componentes e comunicação entre eles |
 | `docs/sprint1/proposta.pdf` | Definição do trio, descrição do sistema e pesquisa com referências e resumo |
 | `docs/sprint2/historia1_validar_fatura.md` | História 1 (validar a fatura) e critérios de aceitação |
 | `docs/sprint2/historia2_detectar_suspeitas.md` | História 2 (detectar suspeitas) e critérios de aceitação |
@@ -99,6 +109,6 @@ Conferidor-de-Fatura-de-Cartao/
 | Sprint | Entrega | Situação |
 |---|---|---|
 | 1 | Proposta e pesquisa | Entregue |
-| 2 | Histórias de usuário, critérios de aceitação e testes | Em andamento (os testes ainda falham, pois servem de especificação) |
-| 3 | Arquitetura e desenvolvimento das histórias | Pendente |
+| 2 | Histórias de usuário, critérios de aceitação e testes | Entregue |
+| 3 | Arquitetura e desenvolvimento das histórias | Em andamento (histórias 1, 2 e 3 implementadas e com todos os testes passando) |
 | 4 | Refatoração e padrões de projeto | Pendente |
