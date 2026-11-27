@@ -63,7 +63,7 @@ python -m unittest discover -s tests -v
 Para rodar os testes de uma única história (exemplo: história 3):
 
 ```
-python -m unittest tests.teste_hu3_gerar_relatorio -v
+python -m unittest tests.teste_conferidor_fatura.TestHU3GerarRelatorio -v
 ```
 
 ## Estrutura do repositório
@@ -79,8 +79,10 @@ Conferidor-de-Fatura-de-Cartao/
 │   │   ├── historia1_validar_fatura.md
 │   │   ├── historia2_detectar_suspeitas.md
 │   │   └── historia3_gerar_relatorio.md
-│   └── sprint3/
-│       └── diagrama_da_arquitetura.md
+│   ├── sprint3/
+│   │   └── diagrama_da_arquitetura.md
+│   └── sprint4/
+│       └── padroes_de_projeto.md
 ├── exemplos/
 │   ├── fatura_exemplo.csv
 │   ├── fatura_assinatura_mensal.csv
@@ -89,15 +91,14 @@ Conferidor-de-Fatura-de-Cartao/
 │   ├── fatura_sem_coluna_valor.csv
 │   └── fatura_sem_suspeitas.csv
 └── tests/
-    ├── teste_hu1_validar_fatura.py
-    ├── teste_hu2_detectar_suspeitas.py
-    └── teste_hu3_gerar_relatorio.py
+    └── teste_conferidor_fatura.py
 ```
 
 ## Documentação
 
 | Documento | Conteúdo |
 |---|---|
+| `docs/sprint4/padroes_de_projeto.md` | Os três padrões aplicados (Strategy, Chain of Responsibility e Template Method), com um diagrama de classes de cada |
 | `docs/sprint3/diagrama_da_arquitetura.md` | Arquitetura em camadas, componentes e comunicação entre eles |
 | `docs/sprint1/proposta.pdf` | Definição do trio, descrição do sistema e pesquisa com referências e resumo |
 | `docs/sprint2/historia1_validar_fatura.md` | História 1 (validar a fatura) e critérios de aceitação |
@@ -110,5 +111,5 @@ Conferidor-de-Fatura-de-Cartao/
 |---|---|---|
 | 1 | Proposta e pesquisa | Entregue |
 | 2 | Histórias de usuário, critérios de aceitação e testes | Entregue |
-| 3 | Arquitetura e desenvolvimento das histórias | Em andamento (histórias 1, 2 e 3 implementadas e com todos os testes passando) |
-| 4 | Refatoração e padrões de projeto | Pendente |
+| 3 | Arquitetura e desenvolvimento das histórias | Entregue |
+| 4 | Refatoração e padrões de projeto | Em andamento (Strategy, Chain of Responsibility e Template Method aplicados) |

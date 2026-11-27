@@ -8,8 +8,8 @@ Arquitetura em camadas (ver docs/sprint3/diagrama_da_arquitetura.md):
 - Aplicação:    conferir_fatura()
 - Dados:        ler_fatura() e a cadeia de validadores de linha (Chain of Responsibility)
 - Domínio:      DetectorDeSuspeitas com as estratégias EstrategiaDuplicidade e
-                EstrategiaParcelaInconsistente (Strategy), gerar_relatorio() e as
-                entidades Lancamento e Suspeita
+                EstrategiaParcelaInconsistente (Strategy), GeradorDeRelatorio com
+                RelatorioEmTexto (Template Method), e as entidades Lancamento e Suspeita
 
 Uso:
     python conferidor_fatura.py fatura.csv
@@ -304,27 +304,49 @@ def _formatar_dinheiro(valor: Decimal) -> str:
     return f"R$ {texto}"
 
 
-def gerar_relatorio(
-    lancamentos: List[Lancamento], suspeitas: List[Suspeita], avisos: List[str]
-) -> str:
-    """Monta o relatório em texto com o resumo, os avisos e as suspeitas."""
-    total = sum((l.valor for l in lancamentos), Decimal("0"))
-    linhas = [
-        "RELATÓRIO DE CONFERÊNCIA DA FATURA",
-        "==================================",
-        f"Lançamentos lidos: {len(lancamentos)}",
-        f"Valor total da fatura: {_formatar_dinheiro(total)}",
-    ]
+class GeradorDeRelatorio(ABC):
+    """Define a ordem do relatório e deixa cada parte para as subclasses (Template Method)"""
 
-    if avisos:
-        linhas += ["", "Avisos"]
-        linhas += [f"- {aviso}" for aviso in avisos]
+    def gerar(
+        self, lancamentos: List[Lancamento], suspeitas: List[Suspeita], avisos: List[str]
+    ) -> str:
+        linhas = self.montar_resumo(lancamentos)
+        if avisos:
+            linhas += self.montar_avisos(avisos)
+        linhas += self.montar_suspeitas(suspeitas)
+        return "\n".join(linhas)
 
-    linhas.append("")
-    if not suspeitas:
-        linhas.append("Nenhuma suspeita encontrada.")
-    else:
-        linhas += [f"Suspeitas encontradas ({len(suspeitas)})", "-" * 26]
+    @abstractmethod
+    def montar_resumo(self, lancamentos: List[Lancamento]) -> List[str]:
+        """Título e totais da fatura"""
+
+    @abstractmethod
+    def montar_avisos(self, avisos: List[str]) -> List[str]:
+        """Bloco de avisos, chamado só quando houver algum"""
+
+    @abstractmethod
+    def montar_suspeitas(self, suspeitas: List[Suspeita]) -> List[str]:
+        """Lista das suspeitas ou a mensagem de que não há nenhuma"""
+
+
+class RelatorioEmTexto(GeradorDeRelatorio):
+    def montar_resumo(self, lancamentos: List[Lancamento]) -> List[str]:
+        total = sum((l.valor for l in lancamentos), Decimal("0"))
+        return [
+            "RELATÓRIO DE CONFERÊNCIA DA FATURA",
+            "==================================",
+            f"Lançamentos lidos: {len(lancamentos)}",
+            f"Valor total da fatura: {_formatar_dinheiro(total)}",
+        ]
+
+    def montar_avisos(self, avisos: List[str]) -> List[str]:
+        return ["", "Avisos"] + [f"- {aviso}" for aviso in avisos]
+
+    def montar_suspeitas(self, suspeitas: List[Suspeita]) -> List[str]:
+        if not suspeitas:
+            return ["", "Nenhuma suspeita encontrada."]
+
+        linhas = ["", f"Suspeitas encontradas ({len(suspeitas)})", "-" * 26]
         for numero, suspeita in enumerate(suspeitas, start=1):
             linhas += [
                 f"{numero}. {suspeita.tipo}",
@@ -335,8 +357,13 @@ def gerar_relatorio(
             ]
         indevido = sum((s.valor_indevido for s in suspeitas), Decimal("0"))
         linhas += ["", f"Total possivelmente indevido: {_formatar_dinheiro(indevido)}"]
+        return linhas
 
-    return "\n".join(linhas)
+
+def gerar_relatorio(
+    lancamentos: List[Lancamento], suspeitas: List[Suspeita], avisos: List[str]
+) -> str:
+    return RelatorioEmTexto().gerar(lancamentos, suspeitas, avisos)
 
 
 # ---------------------------------------------------------------------------
